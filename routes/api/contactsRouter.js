@@ -1,5 +1,6 @@
 import express from 'express';
 import { listContacts, getContactById, addContact, removeContact, updateContact } from '../../models/contacts';
+import { contactValidation } from '../../validation/validation';
 
 const router = express.Router()
 
@@ -40,11 +41,18 @@ router.get('/:contactId', async (req, res, next) => {
 //CREATE
 router.post('/', async (req, res, next) => {
 
-  const { name, email, phone } = req.body;
+  //const { name, email, phone } = req.body;
 
   //const result = await addContact({ name, email, phone });
 
   try {
+    const { error } = contactValidation.validate(req.body);
+    if (error) {
+      const validationError = new Error("Missing required name field");
+      validationError.status = 400;
+      throw validationError;
+    }
+
     const result = await addContact(req.body);
     res.status(201).json(result);
   } catch (error) {
@@ -77,7 +85,15 @@ router.delete('/:contactId', async (req, res, next) => {
 router.put('/:contactId', async (req, res, next) => {
   
   try {
-    const result = await updateContact(req.params.contactId, req.body);
+    const { error } = contactValidation.validate(req.body);
+    if (error) {
+      const validationError = new Error("Missing fields");
+      validationError.status = 400;
+      throw validationError;
+    }
+
+    const { contactId } = req.params;
+    const result = await updateContact(contactId, req.body);
 
     if (!result) {
       res.status(404).json({ messge: "Not found" });
