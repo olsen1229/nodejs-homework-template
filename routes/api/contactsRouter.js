@@ -1,6 +1,6 @@
 import express from 'express';
-import { listContacts, getContactById, addContact, removeContact, updateContact } from '../../models/contacts';
-import { contactValidation } from '../../validation/validation';
+import { listContacts, getContactById, addContact, removeContact, updateContact } from '../../models/contacts.js';
+import { contactValidation } from '../../validation/validation.js';
 
 const router = express.Router()
 

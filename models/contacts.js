@@ -2,7 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { nanoid } from "nanoid";
 
-const contactsPath = path.join("db", "contacts.json");
+const contactsPath = path.join("models", "contacts.json");
 console.log(contactsPath);
 
 const listContacts = async () => {
@@ -16,18 +16,7 @@ const getContactById = async (contactId) => {
   const result = contacts.find((contact) => contact.id === contactId);
   return result || null;
 
-};
-
-const removeContact = async (contactId) => {
-  const contacts = await listContacts();
-  const index = contacts.findIndex((item) => item.id === contactId);
-  if (index === -1) 
-    return null;
-  
-  const deletedContact = contacts.splice(index, 1);
-  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
-  return deletedContact;
-};
+}; 
 
 const addContact = async ({ name, email, phone }) => {
    
@@ -43,6 +32,19 @@ const addContact = async ({ name, email, phone }) => {
   return newContact;
      
   };
+
+const removeContact = async (contactId) => {
+  const contacts = await listContacts();
+  const index = contacts.findIndex((item) => item.id === contactId);
+  if (index === -1) 
+    return null;
+  
+  const deletedContact = contacts.splice(index, 1);
+  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
+  return deletedContact;
+};
+
+
 
   const updateContact = async (id, { name, email, phone }) => {
   const contacts = await listContacts();
