@@ -1,4 +1,5 @@
 import { Contact } from "../models/contactsModel.js";
+import { contactValidation, favoriteValidation } from "../validation/validation.js";
 
 
 const getAllContacts = async (_req, res, next) => {
@@ -56,7 +57,7 @@ try {
         }
        res.status(200).json(result);
   } catch (error) {
-    next(error);
+    next(error); 
   }
 
   // return result;
@@ -87,10 +88,36 @@ const { error } = contactValidation.validate(req.body);
   }
 };
 
+const updateStatusContact = async (req, res) => {
+  // Validate the favorite field
+  const { error } = favoriteValidation.validate(req.body);
+  if (error) {
+    return res.status(400).json({ message: "missing field favorite" });
+  }
+  try {
+    const { contactId } = req.params;
+
+    const result = await contactId.findByIdAndUpdate(contactId, req.body, {
+      favorite: true,
+    });
+
+    if (!result) {
+      return res.status(404).json({ message: "Contact not found" });
+    }
+    res.json(result);
+    
+  } catch (error) {
+    // Handle any other errors
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 export {
   getAllContacts,
   getContactById,
   addContact,
   deleteContact,
   updateContact,
+  updateStatusContact
 };

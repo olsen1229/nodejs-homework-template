@@ -5,6 +5,7 @@ import {
   addContact,
   deleteContact,
   updateContact,
+  updateStatusContact,
 } from "../../controllers/contactsController.js";
 
 
@@ -24,5 +25,8 @@ router.delete("/:contactId", deleteContact);
 
 // corresponds to updateContact
 router.put("/:contactId", updateContact);
+
+//update favorite field of contact
+//router.patch("/:contactId/favorite", authenticateToken, updateStatusContact);
 
 export { router };

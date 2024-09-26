@@ -3,6 +3,7 @@ import logger from "morgan";
 import cors from "cors";
 
 import { router as contactsRouter } from "./routes/api/contactsRouter.js";
+import { router as usersRouter } from "./routes/api/usersRouter.js"
 
 const app = express();
 
@@ -14,16 +15,17 @@ app.use(cors())
 app.use(express.json())
 
 // initialize the base path for the contacts router
-app.use('/api/contacts', contactsRouter)
+app.use('/api/contacts', contactsRouter);
+app.use("/api/users", usersRouter);
 
 // error handling using res.status()
 // not found
-app.use((req, res) => {
+app.use((_req, res) => {
   res.status(404).json({ message: 'Not found' })
 })
 
 // server error
-app.use((err, req, res, next) => {
+app.use((err, _req, res, _next) => {
   res.status(500).json({ message: err.message })
 })
 
