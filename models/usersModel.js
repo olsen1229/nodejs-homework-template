@@ -20,6 +20,9 @@ const userSchema = new Schema({
         type: String,
         default: null,
     },
+    avatarUrl: {
+        type: String, // field tot store the URL of the user's avatar
+    },
 },
     {versionKey: false}
 );

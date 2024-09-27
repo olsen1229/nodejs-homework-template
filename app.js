@@ -14,6 +14,11 @@ app.use(cors())
 // this is the JSON parser middleware
 app.use(express.json())
 
+//tells Express to serve static files frm the public directory
+// http://localhost:3000/avatar/medium.webp
+// we need to acess the localhost port followed by the directory of the static file and the file name and extension
+app.use(express.static("public"));
+
 // initialize the base path for the contacts router
 app.use('/api/contacts', contactsRouter);
 app.use("/api/users", usersRouter);
