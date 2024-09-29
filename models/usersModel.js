@@ -23,6 +23,14 @@ const userSchema = new Schema({
     avatarUrl: {
         type: String, // field tot store the URL of the user's avatar
     },
+    verify: {
+        type: Boolean,
+        default: false,
+    },
+    verificationToken: {
+        type: String,
+        required: [true, "Verify token is required"],
+    },
 },
     {versionKey: false}
 );

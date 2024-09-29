@@ -5,8 +5,11 @@ import jwt from "jsonwebtoken";
 import gravatar from "gravatar";
 import bcrypt from "bcrypt";
 import { Jimp } from "jimp";
+import path from "path";
+import { sendEmail } from "../helpers/sendEmail.js";
+import { nanoid } from "nanoid";
 
-const { SECRET_KEY } = process.env;
+const { SECRET_KEY, PORT } = process.env;
 
 // 1. validate through frontend validation using Joi
 // 2. find an existing user to prevent a duplicate email signup
@@ -38,7 +41,26 @@ try {
     // this avatar is temporary and pplaceholder onl for when the user initially signs up
     const avatarUrl = gravatar.url(email, { protocol: "http" });
 
-    const newUser = await User.create({ email, password: hashedPassword, avatarUrl });
+    // we need to update the signup controller so that it includes a verify and verification token fields when the user signs up
+    const verificationToken = nanoid();
+    // additionally, upon signup, the nodemailer must send a verification email to the email being singed up
+
+    // Send an email to the user's mail and specify a link to verify the email (/users/verify/:verificationToken) in the message
+    await sendEmail({
+        to: email, //receipientttttt
+        subject: "Action Required: Verify Your Email",
+        html: `<a target="_blank" href="http://localhost:${PORT}/api/users/verify/${verificationToken}
+        ">Click to verify email</a>`,
+    });
+
+    
+    const newUser = await User.create({
+        email,
+        password: hashedPassword,
+        avatarUrl,
+        verificationToken,
+
+    });
 
     //res.status().json()is our way of resolving the HTTP request promise
     // without this, our HTTP request would go on forever
@@ -47,6 +69,7 @@ try {
             email: newUser.email,
             subscription: newUser.subscription,
             avatarUrl: newUser.avatarUrl,
+            verificationToken,
         },
     });
    
@@ -104,8 +127,7 @@ const loginUser = async (req, res) => {
             
         });
 
-      
-            
+           
     } catch (error) {
         res.status(500).json({ message: error.message });
    
@@ -170,14 +192,25 @@ const updateAvatar = async (req, res) => {
         const { _id } = req.user;
         // uploaded avatar is access through the req.file
 
+        // uploaded avatar is accessed through the req.file
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+
         // request body is the request that supoorts this content tpe: applicaton/json, text/html
         // request file is the request that supoorts this content tpe: Content-Type: image/jpeg, multipart/form-data
         
-        const { path: oldPath, originalname } = req.file; 
+        const { path: oldPath, originalname } = req.file;
         // we are reading from the temporary path
         // we are resizing the image to 250px width and 250px height
         // we are saving the updated resoltuion to the old temporary path
-        await Jimp.read(oldPath).then((image) => image.resize(250, 250).write(oldPath));
+        await Jimp.read(oldPath)
+            .then((image) => {
+            console.log("Resizing image"); // Debug log
+            image.resize({ w: 250, h: 250 }).write(oldPath);
+            console.log("Image resized and saved to:", oldPath); // Debug log
+      })
+      .catch((error) => console.log(error));
 
         // the unique file name that we will generate is a concatenated version of the id of the user document and the extension of the original image file.
         const extension = path.extname(originalname);
@@ -201,8 +234,85 @@ const updateAvatar = async (req, res) => {
 
     }
 };   
+
+// 1. Extract the verification token from req. params
+// 2. Look for the verification token in the User document
+// 3. If the user doesn not exist, return status 400
+// 4. if it exists we need to update the value of the verify field to true
+const verifyEmail = async (res, res) => {
+    const verificationToken = req.params;
+
+    try {
+        const user = await User.findOne({ verficationToken });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found! Please try again." });
+        }
+
+        await User.findByIdAndUpdate(user.id, {
+            verify: true,
+            verificationToken: null,
+
+        });
+        res.status(200).json({ message: "Verification successful", });
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error happened" });
+    }
+};
+
+const resendVerifyEmail = async (req, res) => {
+    const { email } = req.body;
+
+    // Resending email validation error
+    const { error } = emailValidation.validate(req.body);
+    if (error) {
+        return res.status(400).json({ message: error.message });
+    }
+
+    try {
+        const user = await User.findOne({ email });
+
+        // Email not found
+        if (!user) {
+            return res.status(404).json({ message: "The provided email address could not be found" });
+        }
+        
+        // Resend email for verified user
+        if (user.verify) {
+            return res.status(400)
+                .json({ message: "Verification has already been passed" });
+        }
+    
+               
+        await sendEmail({
+            to: email,
+            subject: "Action Required: Verify Your Email",
+            html: `<a target="_blank" href="http://localhost:${PORT}/api/users/verify/
+            ${user.verificationToken}">Click to verify email</a>`,
+        });
+               
+    
+        // Resending a email success response
+        res.json({ message: "Verification email sent" });
+        
+    } catch (error) {
+        // Internal server error handling
+        res.status(500).json({ message: "Internal server error" });
+    }
+
+    
+
+};
     
     
 
-
-export { signupUser, loginUser, logoutUser, getCurrentUsers, updateUserSubscription, updateAvatar, };
+export {
+    signupUser,
+    loginUser,
+    logoutUser,
+    getCurrentUsers,
+    updateUserSubscription,
+    updateAvatar,
+    verifyEmail,
+    resendVerifyEmail,
+};
